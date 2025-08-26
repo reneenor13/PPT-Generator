@@ -8,7 +8,6 @@ import os
 
 app = FastAPI(title="Text to PowerPoint Generator")
 
-# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,24 +24,25 @@ async def generate_presentation(
     text: str = Form(...),
     guidance: str = Form(""),
     llm_provider: str = Form(...),
-    api_key: str = Form(...),
+    api_key: str = Form(None),
     template: UploadFile = File(...)
 ):
     try:
+        if llm_provider.lower() == "gemini":
+            api_key = os.environ.get("GEMINI_API_KEY")  # Use environment variable
+
+        llm = LLMClient(provider=llm_provider, api_key=api_key)
+        slides = llm.generate_slide_outline(text, guidance)
+
         # Save uploaded template temporarily
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pptx") as tmp_template:
             tmp_template.write(await template.read())
             template_path = tmp_template.name
 
-        # Generate slide content using Google API
-        llm = LLMClient(provider=llm_provider, api_key=api_key)
-        slides = llm.generate_slide_outline(text, guidance)
-
-        # Create presentation using template
+        # Create presentation
         output_path = tempfile.NamedTemporaryFile(delete=False, suffix=".pptx").name
         create_presentation(slides, template_path, output_path)
 
-        # Clean up template
         os.remove(template_path)
 
         return FileResponse(

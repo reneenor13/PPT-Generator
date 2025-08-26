@@ -1,1 +1,20 @@
-
+{
+  "name": "text-to-ppt-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for Text to PowerPoint Generator",
+  "main": "index.js",
+  "scripts": {
+    "start": "serve -s . -l 3000",
+    "build": "echo 'Static build - no build process needed'",
+    "dev": "serve -s . -l 3000"
+  },
+  "dependencies": {
+    "serve": "^14.2.1"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.3.5"
+  },
+  "keywords": ["powerpoint", "generator", "presentation"],
+  "author": "Your Name",
+  "license": "MIT"
+}

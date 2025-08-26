@@ -8,7 +8,7 @@ import os
 
 app = FastAPI(title="Text to PowerPoint Generator")
 
-# Enable CORS for frontend hosted separately
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -29,16 +29,16 @@ async def generate_presentation(
     template: UploadFile = File(...)
 ):
     try:
-        # Read template into temp file
+        # Save uploaded template temporarily
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pptx") as tmp_template:
             tmp_template.write(await template.read())
             template_path = tmp_template.name
 
-        # Generate slide content using LLM
+        # Generate slide content using Google API
         llm = LLMClient(provider=llm_provider, api_key=api_key)
         slides = llm.generate_slide_outline(text, guidance)
 
-        # Build presentation using template
+        # Create presentation using template
         output_path = tempfile.NamedTemporaryFile(delete=False, suffix=".pptx").name
         create_presentation(slides, template_path, output_path)
 
@@ -50,5 +50,6 @@ async def generate_presentation(
             filename="generated_presentation.pptx",
             media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation"
         )
+
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})

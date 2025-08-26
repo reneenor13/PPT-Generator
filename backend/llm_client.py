@@ -1,7 +1,7 @@
 import os
 from typing import List
-from google.generativeai import Client as GoogleClient
 import requests
+import google.generativeai as genai  # Correct import
 
 class LLMClient:
     def __init__(self, provider: str, api_key: str = None):
@@ -10,10 +10,10 @@ class LLMClient:
         if self.provider == "google":
             if not api_key:
                 raise ValueError("Google API key is required")
-            self.client = GoogleClient(api_key=api_key)
+            genai.configure(api_key=api_key)  # Set the API key
+            self.client = genai  # Use the module directly
 
         elif self.provider == "gemini":
-            # Gemini key will come from environment if not provided
             self.api_key = api_key or os.environ.get("GEMINI_API_KEY")
             if not self.api_key:
                 raise ValueError("Gemini API key not found in environment")
@@ -24,13 +24,14 @@ class LLMClient:
         prompt = f"Split the following text into slide-wise points:\n{text}\nGuidance: {guidance}"
 
         if self.provider == "google":
-            response = self.client.chat(
+            response = self.client.chat.completions.create(
                 model="chat-bison-001",
                 messages=[{"author": "user", "content": prompt}],
                 temperature=0.5,
                 max_output_tokens=800
             )
-            slides = response.last.split("\n\n")
+            slides_text = response.choices[0].content
+            slides = slides_text.split("\n\n")
 
         elif self.provider == "gemini":
             url = "https://api.gemini.com/v1/generate"  # Replace with actual endpoint

@@ -3,7 +3,6 @@ from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
 import os
 import tempfile
-import shutil
 
 class PowerPointBuilder:
     def __init__(self, template_path):

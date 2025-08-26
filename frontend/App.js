@@ -5,8 +5,7 @@ class TextToPPTApp {
         this.state = {
             textContent: '',
             guidance: '',
-            apiProvider: 'openai',
-            apiKey: '',
+            apiProvider: 'google', // Default to Google
             templateFile: null,
             loading: false,
             error: null,
@@ -21,14 +20,8 @@ class TextToPPTApp {
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
             return 'http://localhost:5000';
         } else {
-            // Replace with your deployed backend URL
-            // For now, try to detect from current URL
-            const protocol = window.location.protocol;
-            const port = window.location.port;
-            if (port && port !== '80' && port !== '443') {
-                return `${protocol}//${hostname}:5000`;
-            }
-            return `${protocol}//${hostname}`;
+            // For production, use relative URL
+            return '';
         }
     }
 
@@ -98,40 +91,6 @@ class TextToPPTApp {
                             >
                         </div>
 
-                        <!-- API Provider Selection -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i class="fas fa-robot mr-2"></i>
-                                    AI Provider *
-                                </label>
-                                <select
-                                    id="apiProvider"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    required
-                                >
-                                    <option value="openai" ${this.state.apiProvider === 'openai' ? 'selected' : ''}>OpenAI (GPT)</option>
-                                    <option value="anthropic" ${this.state.apiProvider === 'anthropic' ? 'selected' : ''}>Anthropic (Claude)</option>
-                                    <option value="google" ${this.state.apiProvider === 'google' ? 'selected' : ''}>Google (Gemini)</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i class="fas fa-key mr-2"></i>
-                                    API Key *
-                                </label>
-                                <input
-                                    type="password"
-                                    id="apiKey"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="Your API key (not stored)"
-                                    value="${this.state.apiKey}"
-                                    required
-                                >
-                            </div>
-                        </div>
-
                         <!-- Template Upload -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -192,7 +151,7 @@ class TextToPPTApp {
 
                 <!-- Footer -->
                 <div class="text-center text-gray-500 text-sm">
-                    <p>&copy; 2024 Text to PowerPoint Generator. Your API keys are never stored or logged.</p>
+                    <p>&copy; 2024 Text to PowerPoint Generator. Powered by Google Gemini AI.</p>
                 </div>
             </div>
         `;
@@ -241,14 +200,6 @@ class TextToPPTApp {
         document.getElementById('guidance').addEventListener('input', (e) => {
             this.state.guidance = e.target.value;
         });
-        
-        document.getElementById('apiProvider').addEventListener('change', (e) => {
-            this.state.apiProvider = e.target.value;
-        });
-        
-        document.getElementById('apiKey').addEventListener('input', (e) => {
-            this.state.apiKey = e.target.value;
-        });
     }
 
     handleFileSelect(event) {
@@ -269,9 +220,6 @@ class TextToPPTApp {
             if (!this.state.textContent.trim()) {
                 throw new Error('Please enter your text content');
             }
-            if (!this.state.apiKey.trim()) {
-                throw new Error('Please enter your API key');
-            }
             if (!this.state.templateFile) {
                 throw new Error('Please upload a PowerPoint template');
             }
@@ -281,7 +229,6 @@ class TextToPPTApp {
             formData.append('text_content', this.state.textContent);
             formData.append('guidance', this.state.guidance);
             formData.append('api_provider', this.state.apiProvider);
-            formData.append('api_key', this.state.apiKey);
             formData.append('template_file', this.state.templateFile);
 
             // Make API request

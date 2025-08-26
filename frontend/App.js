@@ -13,7 +13,7 @@ function App() {
     formData.append("text", text);
     formData.append("guidance", guidance);
     formData.append("llm_provider", provider);
-    formData.append("api_key", apiKey);
+    formData.append("api_key", provider === "google" ? apiKey : "");
     formData.append("template", templateFile);
 
     const res = await fetch("https://<YOUR_BACKEND_URL>/generate-presentation", {
@@ -56,6 +56,7 @@ function App() {
         />
         <select className="w-full p-2 border" value={provider} onChange={(e) => setProvider(e.target.value)}>
           <option value="google">Google</option>
+          <option value="gemini">Gemini</option>
         </select>
         <input
           type="password"
@@ -63,7 +64,8 @@ function App() {
           placeholder="Google API Key"
           value={apiKey}
           onChange={(e) => setApiKey(e.target.value)}
-          required
+          required={provider === "google"}
+          disabled={provider === "gemini"}
         />
         <input type="file" accept=".pptx,.potx" onChange={(e) => setTemplateFile(e.target.files[0])} required />
         <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Generate PPT</button>

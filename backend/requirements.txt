@@ -1,1 +1,6 @@
+fastapi
+uvicorn
+python-pptx
+python-multipart
+requests
 

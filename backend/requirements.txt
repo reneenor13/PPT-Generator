@@ -1,10 +1,8 @@
-flask
-flask-cors
+fastapi
+uvicorn
 python-pptx
 openai
-anthropic
-google-generativeai
+flask-cors
 requests
-python-dotenv
 gunicorn
-
+python-dotenv

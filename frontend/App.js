@@ -22,7 +22,13 @@ class TextToPPTApp {
             return 'http://localhost:5000';
         } else {
             // Replace with your deployed backend URL
-            return 'https://your-backend-url.onrender.com';
+            // For now, try to detect from current URL
+            const protocol = window.location.protocol;
+            const port = window.location.port;
+            if (port && port !== '80' && port !== '443') {
+                return `${protocol}//${hostname}:5000`;
+            }
+            return `${protocol}//${hostname}`;
         }
     }
 

@@ -4,7 +4,7 @@ function App() {
   const [text, setText] = useState("");
   const [guidance, setGuidance] = useState("");
   const [apiKey, setApiKey] = useState("");
-  const [provider, setProvider] = useState("openai");
+  const [provider, setProvider] = useState("google");
   const [templateFile, setTemplateFile] = useState(null);
 
   const handleSubmit = async (e) => {
@@ -55,12 +55,12 @@ function App() {
           onChange={(e) => setGuidance(e.target.value)}
         />
         <select className="w-full p-2 border" value={provider} onChange={(e) => setProvider(e.target.value)}>
-          <option value="openai">OpenAI</option>
+          <option value="google">Google</option>
         </select>
         <input
           type="password"
           className="w-full p-2 border"
-          placeholder="LLM API Key"
+          placeholder="Google API Key"
           value={apiKey}
           onChange={(e) => setApiKey(e.target.value)}
           required

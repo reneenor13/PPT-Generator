@@ -69,9 +69,14 @@ def generate_presentation():
         # Get form data
         text_content = request.form.get('text_content')
         guidance = request.form.get('guidance', '')
-        api_provider = request.form.get('api_provider')
-        api_key = request.form.get('api_key')
+        api_provider = request.form.get('api_provider', 'google')  # Default to Google
         template_file = request.files.get('template_file')
+        
+        # Use environment variable for API key
+        api_key = os.environ.get('GEMINI_API_KEY')
+        if not api_key:
+            logger.error("GEMINI_API_KEY environment variable not set")
+            return jsonify({"error": "API key not configured on server"}), 500
         
         logger.info(f"Text content length: {len(text_content) if text_content else 0}")
         logger.info(f"API provider: {api_provider}")
@@ -80,10 +85,6 @@ def generate_presentation():
         # Validation
         if not text_content:
             return jsonify({"error": "Text content is required"}), 400
-        if not api_provider:
-            return jsonify({"error": "API provider is required"}), 400
-        if not api_key:
-            return jsonify({"error": "API key is required"}), 400
         if not template_file:
             return jsonify({"error": "Template file is required"}), 400
         
@@ -169,67 +170,6 @@ def internal_error(error):
         "message": "Something went wrong on the server"
     }), 500
 
-### `backend/test_server.py` (Create this file for testing)
-```python
-#!/usr/bin/env python3
-"""
-Simple test script to verify backend functionality
-"""
-import requests
-import sys
-import os
-
-def test_backend(base_url="http://localhost:5000"):
-    """Test all backend endpoints"""
-    print(f"Testing backend at: {base_url}")
-    print("=" * 50)
-    
-    # Test 1: Root endpoint
-    try:
-        response = requests.get(f"{base_url}/")
-        print(f"✓ Root endpoint: {response.status_code}")
-        if response.status_code == 200:
-            print(f"  Response: {response.json()}")
-    except Exception as e:
-        print(f"✗ Root endpoint failed: {e}")
-    
-    print()
-    
-    # Test 2: Health check
-    try:
-        response = requests.get(f"{base_url}/health")
-        print(f"✓ Health check: {response.status_code}")
-        if response.status_code == 200:
-            print(f"  Response: {response.json()}")
-    except Exception as e:
-        print(f"✗ Health check failed: {e}")
-    
-    print()
-    
-    # Test 3: Test endpoint
-    try:
-        response = requests.get(f"{base_url}/test")
-        print(f"✓ Test endpoint: {response.status_code}")
-        if response.status_code == 200:
-            print(f"  Response: {response.json()}")
-    except Exception as e:
-        print(f"✗ Test endpoint failed: {e}")
-    
-    print()
-    
-    # Test 4: Generate presentation (without files - should fail gracefully)
-    try:
-        response = requests.post(f"{base_url}/generate-presentation", data={})
-        print(f"✓ Generate endpoint (empty): {response.status_code}")
-        if response.status_code == 400:
-            print(f"  Expected error: {response.json()}")
-    except Exception as e:
-        print(f"✗ Generate endpoint test failed: {e}")
-
-if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        base_url = sys.argv[1]
-    else:
-        base_url = "http://localhost:5000"
-    
-    test_backend(base_url)
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)

@@ -1,37 +1,30 @@
-# PPT-Generator
-# Text to PowerPoint Generator
+## Presentation Generator
 
-Transform your text, markdown, or prose into professional PowerPoint presentations using AI and your custom templates.
+Transform your text, markdown, or prose into professionally formatted PowerPoint presentations using AI. Simply paste your content, upload a template, and let AI create a structured presentation that matches your template's style.
 
 ## Features
 
-- 🤖 **AI-Powered Analysis**: Intelligently breaks down text into slide structure
-- 🎨 **Template Matching**: Preserves your template's fonts, colors, and layouts
-- 🔗 **Multi-LLM Support**: Works with OpenAI, Anthropic, and Google AI
-- 📱 **Responsive Design**: Works on desktop and mobile
-- 🚫 **Privacy First**: API keys never stored or logged
+- **Smart Content Analysis**: AI automatically breaks down your text into logical slides
+- **Template Preservation**: Maintains your PowerPoint template's fonts, colors, and layout
+- **Multiple LLM Support**: Works with OpenAI, Anthropic, and Google AI models
+- **Speaker Notes Generation**: Automatically creates detailed speaker notes for each slide
+- **Drag & Drop Interface**: Easy file upload with visual feedback
+- **Real-time Processing**: Live progress updates during generation
 
 ## Demo
 
-[Live Demo Link Here]
+🚀 **[Live Demo](https://your-demo-url.com)**
 
 ## Quick Start
 
-### Online Use
-1. Visit the [live demo](your-demo-link)
-2. Paste your text content
-3. Upload your PowerPoint template (.pptx or .potx)
-4. Enter your AI provider API key
-5. Generate and download your presentation
-
-### Local Development
-
-#### Prerequisites
+### Prerequisites
 - Python 3.8+
 - Node.js 16+ (for frontend development)
+- API key from OpenAI, Anthropic, or Google AI
 
-#### Backend Setup
-```bash
-cd backend
-pip install -r requirements.txt
-python main.py
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-username/ai-presentation-generator.git
+   cd ai-presentation-generator

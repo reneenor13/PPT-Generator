@@ -1,20 +1,17 @@
 {
-  "name": "text-to-ppt-frontend",
+  "name": "presentation-generator-frontend",
   "version": "1.0.0",
-  "description": "Frontend for Text to PowerPoint Generator",
-  "main": "index.js",
+  "description": "Frontend for AI-powered presentation generator",
+  "main": "index.html",
   "scripts": {
-    "start": "serve -s . -l 3000",
-    "build": "echo 'Static build - no build process needed'",
-    "dev": "serve -s . -l 3000"
+    "dev": "npx tailwindcss -i ./src/input.css -o ./dist/output.css --watch",
+    "build": "npx tailwindcss -i ./src/input.css -o ./dist/output.css --minify",
+    "serve": "python -m http.server 3000"
   },
   "dependencies": {
-    "serve": "^14.2.1"
+    "axios": "^1.6.0"
   },
   "devDependencies": {
-    "tailwindcss": "^3.3.5"
-  },
-  "keywords": ["powerpoint", "generator", "presentation"],
-  "author": "Your Name",
-  "license": "MIT"
+    "tailwindcss": "^3.3.6"
+  }
 }

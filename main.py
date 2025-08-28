@@ -5,6 +5,8 @@ import asyncio
 from pathlib import Path
 from typing import Optional, Dict, Any
 import logging
+from backend.utils import validate_pptx_file
+from backend.pptx_builder import create_presentation_from_template
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse

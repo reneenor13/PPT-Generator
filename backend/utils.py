@@ -1,48 +1,105 @@
-import os
 import re
-from typing import Optional
+import logging
+from typing import List, Dict, Optional
 
-def validate_file_type(filename: str) -> bool:
-    """Validate that the uploaded file is a PowerPoint file"""
-    if not filename:
-        return False
-    
-    allowed_extensions = ['.pptx', '.potx']
-    file_extension = os.path.splitext(filename.lower())[1]
-    return file_extension in allowed_extensions
+logger = logging.getLogger(__name__)
 
-def sanitize_filename(filename: str) -> str:
-    """Sanitize filename to prevent security issues"""
-    # Remove path separators and special characters
-    filename = re.sub(r'[^\w\-_\.]', '', filename)
-    # Limit length
-    if len(filename) > 100:
-        name, ext = os.path.splitext(filename)
-        filename = name[:95] + ext
-    return filename
 
-def validate_api_key(provider: str, api_key: str) -> bool:
-    """Basic validation of API key format"""
-    if not api_key or len(api_key) < 10:
-        return False
+def split_text_into_sections(text: str, max_length: int = 800) -> List[str]:
+    """
+    Split input text into smaller sections suitable for slides.
+    Attempts to split on paragraph breaks, then sentences if needed.
     
-    if provider.lower() == "openai" and not api_key.startswith("sk-"):
-        return False
-    elif provider.lower() == "anthropic" and not api_key.startswith("sk-ant-"):
-        return False
+    Args:
+        text (str): The input text (markdown or prose)
+        max_length (int): Maximum characters per section
     
-    return True
+    Returns:
+        List[str]: List of text chunks
+    """
+    try:
+        if not text:
+            return []
 
-def estimate_slide_count(text_length: int, guidance: str = "") -> int:
-    """Estimate optimal number of slides based on text length"""
-    words = text_length // 5  # Rough word count estimation
+        # Normalize newlines
+        text = text.replace("\r\n", "\n").strip()
+
+        # First split by double newlines (paragraphs)
+        paragraphs = re.split(r"\n\s*\n", text)
+
+        chunks = []
+        current = ""
+
+        for para in paragraphs:
+            if len(current) + len(para) <= max_length:
+                current += ("\n\n" if current else "") + para
+            else:
+                if current:
+                    chunks.append(current.strip())
+                if len(para) <= max_length:
+                    current = para
+                else:
+                    # Split long paragraph into sentences
+                    sentences = re.split(r'(?<=[.!?])\s+', para)
+                    temp = ""
+                    for sent in sentences:
+                        if len(temp) + len(sent) <= max_length:
+                            temp += " " + sent
+                        else:
+                            if temp:
+                                chunks.append(temp.strip())
+                            temp = sent
+                    if temp:
+                        current = temp
+                    else:
+                        current = ""
+        if current:
+            chunks.append(current.strip())
+
+        return chunks
+
+    except Exception as e:
+        logger.error(f"Error splitting text: {e}")
+        return [text]
+
+
+def map_text_to_slides(chunks: List[str], guidance: Optional[str] = None) -> List[Dict[str, str]]:
+    """
+    Map text chunks into a slide-friendly structure.
+    Optionally use guidance (tone, purpose) to adjust titles.
     
-    if "pitch" in guidance.lower() or "investor" in guidance.lower():
-        # Pitch decks are typically shorter
-        return min(max(6, words // 100), 10)
-    elif "technical" in guidance.lower():
-        # Technical presentations might need more slides
-        return min(max(8, words // 80), 15)
-    else:
-        # General presentation
-        return min(max(5, words // 120), 12)
+    Args:
+        chunks (List[str]): List of text sections
+        guidance (Optional[str]): Extra user instruction
+    
+    Returns:
+        List[Dict[str, str]]: Each dict contains 'title' and 'content'
+    """
+    slides = []
+    for i, chunk in enumerate(chunks, start=1):
+        title = f"Slide {i}"
+        if guidance:
+            title = f"{guidance} – {i}"
+        slides.append({
+            "title": title,
+            "content": chunk
+        })
+    return slides
+
+
+def sanitize_api_key(api_key: str) -> str:
+    """
+    Basic check to ensure API key format looks valid without storing it.
+    
+    Args:
+        api_key (str): The provided API key
+    
+    Returns:
+        str: Sanitized/trimmed API key
+    """
+    if not api_key:
+        return ""
+    api_key = api_key.strip()
+    if not re.match(r"^[A-Za-z0-9_\-\.\|:]+$", api_key):
+        logger.warning("API key contains invalid characters")
+    return api_key

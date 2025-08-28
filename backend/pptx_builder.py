@@ -12,6 +12,31 @@ from pptx.enum.shapes import MSO_SHAPE_TYPE
 
 logger = logging.getLogger(__name__)
 
+
+# backend/pptx_builder.py
+
+from pptx import Presentation
+
+def create_presentation_from_template(template_path: str, slides: list, output_path: str) -> str:
+    """
+    Creates a PowerPoint file from a template and a list of slides.
+    slides = [{"title": "Slide 1", "content": "Some text"}, ...]
+    """
+    prs = Presentation(template_path)
+
+    for slide_data in slides:
+        slide_layout = prs.slide_layouts[1]  # Title & Content layout
+        slide = prs.slides.add_slide(slide_layout)
+
+        title_placeholder = slide.shapes.title
+        content_placeholder = slide.placeholders[1]
+
+        title_placeholder.text = slide_data.get("title", "")
+        content_placeholder.text = slide_data.get("content", "")
+
+    prs.save(output_path)
+    return output_path
+
 async def create_presentation_from_template(
     template_path: str,
     output_path: str,

@@ -1,7 +1,7 @@
-// frontend/App.js
 class PresentationGenerator {
     constructor() {
-        this.apiBaseUrl = 'http://localhost:8000';
+        // Since both frontend and backend are on same domain, use relative URLs
+        this.apiBaseUrl = '';
         this.init();
     }
 
@@ -12,18 +12,15 @@ class PresentationGenerator {
     }
 
     setupEventListeners() {
-        // Form submission
         document.getElementById('presentationForm').addEventListener('submit', (e) => {
             e.preventDefault();
             this.generatePresentation();
         });
 
-        // File input change
         document.getElementById('templateFile').addEventListener('change', (e) => {
             this.handleFileSelect(e.target.files[0]);
         });
 
-        // LLM provider change
         document.getElementById('llmProvider').addEventListener('change', () => {
             this.updateApiKeyPlaceholder();
         });
@@ -37,7 +34,6 @@ class PresentationGenerator {
             const count = textArea.value.length;
             counter.textContent = `${count.toLocaleString()} characters`;
             
-            // Color coding for length
             if (count < 500) {
                 counter.className = 'mt-2 text-sm text-gray-500';
             } else if (count < 2000) {
@@ -54,7 +50,6 @@ class PresentationGenerator {
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('templateFile');
 
-        // Drag and drop handlers
         dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
             dropZone.classList.add('dragover');
@@ -72,11 +67,10 @@ class PresentationGenerator {
             const files = e.dataTransfer.files;
             if (files.length > 0) {
                 this.handleFileSelect(files[0]);
-                fileInput.files = files; // Update the input element
+                fileInput.files = files;
             }
         });
 
-        // Click to upload
         dropZone.addEventListener('click', () => {
             fileInput.click();
         });
@@ -90,7 +84,6 @@ class PresentationGenerator {
         const fileName = document.getElementById('fileName');
         const fileSize = document.getElementById('fileSize');
 
-        // Validate file type
         const validTypes = ['.pptx', '.potx'];
         const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
         
@@ -99,14 +92,12 @@ class PresentationGenerator {
             return;
         }
 
-        // Validate file size (10MB limit)
-        const maxSize = 10 * 1024 * 1024; // 10MB
+        const maxSize = 10 * 1024 * 1024;
         if (file.size > maxSize) {
             this.showError('File size must be less than 10MB');
             return;
         }
 
-        // Show file info
         dropZoneContent.classList.add('hidden');
         fileInfo.classList.remove('hidden');
         fileName.textContent = file.name;
@@ -129,17 +120,14 @@ class PresentationGenerator {
     }
 
     async generatePresentation() {
-        const form = document.getElementById('presentationForm');
         const formData = new FormData();
         
-        // Get form values
         const text = document.getElementById('inputText').value.trim();
         const guidance = document.getElementById('guidance').value.trim();
         const llmProvider = document.getElementById('llmProvider').value;
         const apiKey = document.getElementById('apiKey').value.trim();
         const templateFile = document.getElementById('templateFile').files[0];
 
-        // Validation
         if (!text) {
             this.showError('Please enter some text content');
             return;
@@ -160,7 +148,6 @@ class PresentationGenerator {
             return;
         }
 
-        // Prepare form data
         formData.append('text', text);
         formData.append('guidance', guidance);
         formData.append('llm_provider', llmProvider);
@@ -171,18 +158,16 @@ class PresentationGenerator {
         this.hideMessages();
 
         try {
-            // Start progress simulation
             this.simulateProgress();
 
-            const response = await axios.post(`${this.apiBaseUrl}/generate`, formData, {
+            const response = await axios.post('/api/generate', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
-                responseType: 'blob', // Important for file download
-                timeout: 120000, // 2 minute timeout
+                responseType: 'blob',
+                timeout: 120000,
             });
 
-            // Download the file
             this.downloadFile(response.data, 'generated_presentation.pptx');
             this.showSuccess('Your presentation has been generated and downloaded successfully!');
             
@@ -190,7 +175,6 @@ class PresentationGenerator {
             console.error('Generation error:', error);
             
             if (error.response?.data) {
-                // Try to read error message from blob
                 try {
                     const text = await error.response.data.text();
                     const errorData = JSON.parse(text);
@@ -233,7 +217,7 @@ class PresentationGenerator {
                 progressText.textContent = stage.text;
                 progressPercent.textContent = `${stage.percent}%`;
                 currentStage++;
-                setTimeout(updateProgress, 2000); // 2 seconds per stage
+                setTimeout(updateProgress, 2000);
             }
         };
 
@@ -268,7 +252,6 @@ class PresentationGenerator {
             btnSpinner.classList.add('hidden');
             progressSection.classList.add('hidden');
             
-            // Reset progress
             document.getElementById('progressBar').style.width = '0%';
             document.getElementById('progressText').textContent = 'Processing...';
             document.getElementById('progressPercent').textContent = '0%';
@@ -286,7 +269,6 @@ class PresentationGenerator {
         successDiv.classList.add('hidden');
         errorText.textContent = message;
 
-        // Scroll to message
         container.scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -301,7 +283,6 @@ class PresentationGenerator {
         successDiv.classList.remove('hidden');
         successText.textContent = message;
 
-        // Scroll to message
         container.scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -326,7 +307,6 @@ class PresentationGenerator {
     }
 }
 
-// Global functions for inline event handlers
 function setSuggestion(text) {
     document.getElementById('guidance').value = text;
 }
@@ -337,17 +317,14 @@ function updateApiKeyPlaceholder() {
     }
 }
 
-// Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new PresentationGenerator();
 });
 
-// Handle connection errors gracefully
 window.addEventListener('error', (e) => {
     console.error('Application error:', e);
 });
 
-// Handle unhandled promise rejections
 window.addEventListener('unhandledrejection', (e) => {
     console.error('Unhandled promise rejection:', e);
 });

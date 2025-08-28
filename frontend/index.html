@@ -7,21 +7,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .glass-effect {
-            backdrop-filter: blur(10px);
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
         .upload-zone {
             transition: all 0.3s ease;
-            border: 2px dashed #cbd5e0;
+            border: 2px dashed #51240D;
         }
         .upload-zone:hover, .upload-zone.drag-over {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.05);
+            border-color: #003594;
+            background: rgba(0, 53, 148, 0.05);
         }
         .loading-spinner {
             animation: spin 1s linear infinite;
@@ -44,53 +36,46 @@
             animation: slideIn 0.5s ease-out;
         }
         @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
-<body class="min-h-screen gradient-bg">
+<body class="min-h-screen bg-gray-50">
+
     <!-- Header -->
-    <header class="w-full py-6 px-4">
-        <div class="max-w-6xl mx-auto">
-            <div class="text-center">
-                <h1 class="text-4xl md:text-6xl font-bold text-white mb-4 floating-animation">
-                    <i class="fas fa-magic mr-4"></i>
-                    AI Presentation Generator
-                </h1>
-                <p class="text-xl text-white/80 mb-8">
-                    Transform your text into professional PowerPoint presentations instantly
-                </p>
-            </div>
+    <header class="w-full py-6 px-4 bg-[#003594] shadow-lg">
+        <div class="max-w-6xl mx-auto text-center">
+            <h1 class="text-4xl md:text-6xl font-bold text-white mb-2 floating-animation">
+                <i class="fas fa-magic mr-2"></i>AI Presentation Generator
+            </h1>
+            <p class="text-white/80 text-lg md:text-xl">
+                Transform your text into professional PowerPoint presentations instantly
+            </p>
         </div>
     </header>
 
     <!-- Main Content -->
     <main class="max-w-6xl mx-auto px-4 pb-12">
-        <div class="glass-effect rounded-2xl p-8 slide-in">
+        <div class="bg-white p-8 rounded-2xl shadow-md mt-8 slide-in">
+
             <!-- Quick Start Templates -->
             <div class="mb-8">
-                <h3 class="text-xl font-semibold text-white mb-4">
+                <h3 class="text-xl font-semibold text-[#003594] mb-4">
                     <i class="fas fa-rocket mr-2"></i>Quick Start Templates
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button class="template-btn bg-blue-600/20 hover:bg-blue-600/30 text-white p-4 rounded-lg border border-blue-400/30 transition-all duration-300" data-template="investor pitch">
+                    <button class="template-btn bg-[#003594]/10 hover:bg-[#003594]/20 text-[#003594] p-4 rounded-lg border border-[#51240D]/30 transition-all duration-300" data-template="investor pitch">
                         <i class="fas fa-chart-line mb-2 text-2xl"></i>
                         <div class="font-semibold">Investor Pitch</div>
                         <div class="text-sm opacity-75">Professional business presentation</div>
                     </button>
-                    <button class="template-btn bg-green-600/20 hover:bg-green-600/30 text-white p-4 rounded-lg border border-green-400/30 transition-all duration-300" data-template="research summary">
+                    <button class="template-btn bg-[#51240D]/10 hover:bg-[#51240D]/20 text-[#51240D] p-4 rounded-lg border border-[#003594]/30 transition-all duration-300" data-template="research summary">
                         <i class="fas fa-microscope mb-2 text-2xl"></i>
                         <div class="font-semibold">Research Summary</div>
                         <div class="text-sm opacity-75">Academic or technical findings</div>
                     </button>
-                    <button class="template-btn bg-purple-600/20 hover:bg-purple-600/30 text-white p-4 rounded-lg border border-purple-400/30 transition-all duration-300" data-template="training material">
+                    <button class="template-btn bg-[#003594]/10 hover:bg-[#003594]/20 text-[#003594] p-4 rounded-lg border border-[#51240D]/30 transition-all duration-300" data-template="training material">
                         <i class="fas fa-graduation-cap mb-2 text-2xl"></i>
                         <div class="font-semibold">Training Material</div>
                         <div class="text-sm opacity-75">Educational content</div>
@@ -100,44 +85,44 @@
 
             <!-- Main Form -->
             <form id="presentationForm" class="space-y-8">
-                <!-- Text Input Section -->
-                <div class="bg-white/10 rounded-xl p-6">
-                    <label class="block text-white text-lg font-semibold mb-4">
+
+                <!-- Text Input -->
+                <div class="bg-gray-100 rounded-xl p-6">
+                    <label class="block text-[#003594] text-lg font-semibold mb-4">
                         <i class="fas fa-edit mr-2"></i>Your Content
                     </label>
                     <textarea 
                         id="inputText" 
-                        placeholder="Paste your text, markdown, or long-form content here... The more detailed, the better your presentation will be!"
-                        class="w-full h-64 p-4 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/60 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        placeholder="Paste your text, markdown, or long-form content here..."
+                        class="w-full h-64 p-4 bg-white border border-gray-300 rounded-lg text-[#51240D] placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-[#003594] focus:border-transparent"
                         maxlength="50000"
                     ></textarea>
-                    <div class="flex justify-between mt-2 text-sm text-white/60">
+                    <div class="flex justify-between mt-2 text-sm text-gray-500">
                         <span>Supports markdown formatting</span>
                         <span id="charCount">0 / 50,000 characters</span>
                     </div>
                 </div>
 
-                <!-- Guidance Section -->
-                <div class="bg-white/10 rounded-xl p-6">
-                    <label class="block text-white text-lg font-semibold mb-4">
+                <!-- Guidance -->
+                <div class="bg-gray-100 rounded-xl p-6">
+                    <label class="block text-[#003594] text-lg font-semibold mb-4">
                         <i class="fas fa-compass mr-2"></i>Presentation Guidance (Optional)
                     </label>
-                    <input 
-                        type="text" 
+                    <textarea 
                         id="guidance" 
                         placeholder="e.g., 'Turn into an investor pitch deck' or 'Make it technical and data-focused'"
-                        class="w-full p-4 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                        maxlength="200"
-                    >
+                        class="w-full h-40 p-4 bg-white border border-gray-300 rounded-lg text-[#51240D] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#003594] focus:border-transparent"
+                        maxlength="500"
+                    ></textarea>
                 </div>
 
-                <!-- API Configuration -->
-                <div class="bg-white/10 rounded-xl p-6">
-                    <label class="block text-white text-lg font-semibold mb-4">
+                <!-- AI Provider -->
+                <div class="bg-gray-100 rounded-xl p-6">
+                    <label class="block text-[#003594] text-lg font-semibold mb-4">
                         <i class="fas fa-key mr-2"></i>AI Provider Settings
                     </label>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <select id="llmProvider" class="p-4 bg-white/20 border border-white/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <select id="llmProvider" class="p-4 bg-white border border-gray-300 rounded-lg text-[#51240D] focus:outline-none focus:ring-2 focus:ring-[#003594]">
                             <option value="openai">OpenAI (ChatGPT)</option>
                             <option value="anthropic">Anthropic (Claude)</option>
                             <option value="gemini">Google (Gemini)</option>
@@ -146,33 +131,33 @@
                             type="password" 
                             id="apiKey" 
                             placeholder="Enter your API key (never stored)"
-                            class="p-4 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            class="p-4 bg-white border border-gray-300 rounded-lg text-[#51240D] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#003594]"
                             required
                         >
                     </div>
-                    <div class="mt-3 text-sm text-white/60">
+                    <div class="mt-3 text-sm text-gray-500 flex items-center">
                         <i class="fas fa-shield-alt mr-1"></i>
                         API keys are used only for your request and never stored on our servers
                     </div>
                 </div>
 
                 <!-- Template Upload -->
-                <div class="bg-white/10 rounded-xl p-6">
-                    <label class="block text-white text-lg font-semibold mb-4">
+                <div class="bg-gray-100 rounded-xl p-6">
+                    <label class="block text-[#003594] text-lg font-semibold mb-4">
                         <i class="fas fa-upload mr-2"></i>PowerPoint Template
                     </label>
                     <div id="uploadZone" class="upload-zone p-8 rounded-lg text-center cursor-pointer">
                         <div id="uploadContent">
-                            <i class="fas fa-cloud-upload-alt text-4xl text-white/60 mb-4"></i>
-                            <p class="text-white text-lg mb-2">Drop your PowerPoint template here</p>
-                            <p class="text-white/60 text-sm">or <span class="text-blue-300 underline">browse files</span></p>
-                            <p class="text-white/40 text-xs mt-2">Supports .pptx and .potx files (max 10MB)</p>
+                            <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                            <p class="text-gray-700 text-lg mb-2">Drop your PowerPoint template here</p>
+                            <p class="text-gray-500 text-sm">or <span class="text-[#003594] underline">browse files</span></p>
+                            <p class="text-gray-400 text-xs mt-2">Supports .pptx and .potx files (max 10MB)</p>
                         </div>
                         <div id="fileInfo" class="hidden">
-                            <i class="fas fa-file-powerpoint text-4xl text-green-400 mb-2"></i>
-                            <p id="fileName" class="text-white font-medium"></p>
-                            <p id="fileSize" class="text-white/60 text-sm"></p>
-                            <button type="button" id="removeFile" class="mt-2 text-red-300 hover:text-red-200 text-sm">
+                            <i class="fas fa-file-powerpoint text-4xl text-green-500 mb-2"></i>
+                            <p id="fileName" class="text-gray-700 font-medium"></p>
+                            <p id="fileSize" class="text-gray-500 text-sm"></p>
+                            <button type="button" id="removeFile" class="mt-2 text-red-500 hover:text-red-600 text-sm">
                                 <i class="fas fa-times mr-1"></i>Remove file
                             </button>
                         </div>
@@ -185,61 +170,21 @@
                     <button 
                         type="submit" 
                         id="generateBtn"
-                        class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-xl font-bold py-4 px-12 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                        class="bg-[#003594] hover:bg-[#0050a0] text-white text-xl font-bold py-4 px-12 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                     >
                         <i class="fas fa-magic mr-3"></i>
                         <span id="btnText">Generate Presentation</span>
                     </button>
                 </div>
+
             </form>
 
-            <!-- Progress Section (Hidden initially) -->
-            <div id="progressSection" class="mt-8 hidden">
-                <div class="bg-white/10 rounded-xl p-6">
-                    <h3 class="text-white text-lg font-semibold mb-4">
-                        <i class="fas fa-cog loading-spinner mr-2"></i>
-                        <span id="progressText">Processing your content...</span>
-                    </h3>
-                    <div class="bg-white/20 rounded-full h-4 mb-4">
-                        <div id="progressBar" class="progress-bar bg-gradient-to-r from-blue-500 to-purple-500 h-4 rounded-full" style="width: 0%"></div>
-                    </div>
-                    <div id="progressSteps" class="text-white/80 text-sm space-y-2">
-                        <!-- Progress steps will be inserted here -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Success Section (Hidden initially) -->
-            <div id="successSection" class="mt-8 hidden">
-                <div class="bg-green-600/20 border border-green-400/30 rounded-xl p-6 text-center">
-                    <i class="fas fa-check-circle text-6xl text-green-400 mb-4"></i>
-                    <h3 class="text-white text-2xl font-bold mb-2">Presentation Generated!</h3>
-                    <p class="text-white/80 mb-6">Your AI-powered presentation is ready for download</p>
-                    <button id="downloadBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg transition-colors duration-300">
-                        <i class="fas fa-download mr-2"></i>Download Presentation
-                    </button>
-                </div>
-            </div>
-
-            <!-- Error Section (Hidden initially) -->
-            <div id="errorSection" class="mt-8 hidden">
-                <div class="bg-red-600/20 border border-red-400/30 rounded-xl p-6">
-                    <div class="flex items-center mb-4">
-                        <i class="fas fa-exclamation-triangle text-red-400 text-2xl mr-3"></i>
-                        <h3 class="text-white text-xl font-semibold">Generation Failed</h3>
-                    </div>
-                    <p id="errorMessage" class="text-white/80 mb-4"></p>
-                    <button id="retryBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-300">
-                        <i class="fas fa-redo mr-2"></i>Try Again
-                    </button>
-                </div>
-            </div>
         </div>
     </main>
 
     <!-- Footer -->
-    <footer class="text-center py-6 text-white/60">
-        <p>&copy; 2024 AI Presentation Generator. Built with ❤️ and AI.</p>
+    <footer class="text-center py-6 text-gray-500">
+        <p>&copy; Presentation Generator </p>
     </footer>
 
     <script src="/App.js"></script>

@@ -1,15 +1,18 @@
-import os
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from llm_client import LLMClient
-from pptx_builder import build_pptx
 import tempfile
+import os
+import json
+from typing import Optional
+from pydantic import BaseModel
 
-# Create FastAPI app
-app = FastAPI(title="Text to PowerPoint Generator API")
+from llm_client import LLMClient
+from pptx_builder import PPTXBuilder
+from utils import validate_file_type, sanitize_filename
 
-# Enable CORS for all origins (adjust in production)
+app = FastAPI(title="Presentation Generator API")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,13 +21,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Health check endpoint
-@app.get("/health")
-async def health():
-    return {"status": "running", "message": "Text to PowerPoint Generator API"}
+class GenerateRequest(BaseModel):
+    text: str
+    guidance: Optional[str] = ""
+    llm_provider: str
+    api_key: str
 
-# Generate PowerPoint endpoint
-@app.post("/generate-presentation")
+@app.post("/generate")
 async def generate_presentation(
     text: str = Form(...),
     guidance: str = Form(""),
@@ -32,32 +35,44 @@ async def generate_presentation(
     api_key: str = Form(...),
     template_file: UploadFile = File(...)
 ):
-    # Validate LLM provider
-    if llm_provider.lower() not in ["openai", "anthropic", "google", "gemini"]:
-        raise HTTPException(status_code=400, detail="Unsupported LLM provider")
-
-    # Save uploaded template temporarily
     try:
-        temp_template = tempfile.NamedTemporaryFile(delete=False, suffix=".pptx")
-        template_path = temp_template.name
-        content = await template_file.read()
-        temp_template.write(content)
-        temp_template.close()
+        # Validate template file
+        if not validate_file_type(template_file.filename):
+            raise HTTPException(status_code=400, detail="Invalid file type. Please upload .pptx or .potx files only.")
+        
+        # Create temporary files
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pptx") as temp_template:
+            temp_template.write(await template_file.read())
+            temp_template_path = temp_template.name
+        
+        # Initialize LLM client
+        llm_client = LLMClient(llm_provider, api_key)
+        
+        # Generate slide structure using LLM
+        slide_structure = await llm_client.generate_slide_structure(text, guidance)
+        
+        # Build presentation
+        builder = PPTXBuilder(temp_template_path)
+        output_path = builder.create_presentation(slide_structure)
+        
+        # Clean up template file
+        os.unlink(temp_template_path)
+        
+        # Return the generated presentation
+        return FileResponse(
+            output_path,
+            media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            filename="generated_presentation.pptx",
+            headers={"Content-Disposition": "attachment; filename=generated_presentation.pptx"}
+        )
+        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save template: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-    # Generate slides outline
-    try:
-        llm = LLMClient(provider=llm_provider.lower(), api_key=api_key)
-        slides = llm.generate_slide_outline(text, guidance)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"LLM generation failed: {e}")
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
 
-    # Build PowerPoint file
-    try:
-        output_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pptx")
-        build_pptx(slides, template_path, output_file.name)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to build PPTX: {e}")
-
-    return FileResponse(output_file.name, filename="generated_presentation.pptx")
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

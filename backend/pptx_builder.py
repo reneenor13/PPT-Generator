@@ -1,111 +1,346 @@
+import os
+import logging
+from pathlib import Path
+from typing import Dict, List, Any, Optional
+import asyncio
+
 from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
-from pptx.enum.text import PP_ALIGN
-import tempfile
-import os
-from typing import Dict, List, Any
-import re
+from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
+from pptx.enum.shapes import MSO_SHAPE_TYPE
 
-class PPTXBuilder:
-    def __init__(self, template_path: str):
-        self.template_path = template_path
-        self.template_prs = Presentation(template_path)
-        self.output_path = None
+logger = logging.getLogger(__name__)
+
+async def create_presentation_from_template(
+    template_path: str,
+    output_path: str,
+    presentation_data: Dict[str, Any],
+    llm_client=None
+) -> bool:
+    """
+    Create a PowerPoint presentation from a template and structured data
+    
+    Args:
+        template_path: Path to the PowerPoint template file
+        output_path: Path where the generated presentation will be saved
+        presentation_data: Dictionary containing presentation structure
+        llm_client: LLM client for generating additional content
+    
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        logger.info("🎨 Starting presentation creation")
         
-    def create_presentation(self, slide_structure: Dict[str, Any]) -> str:
-        """Create a new presentation based on the slide structure"""
+        # Load template presentation
+        prs = Presentation(template_path)
+        logger.info(f"📄 Loaded template with {len(prs.slides)} slides")
         
-        # Create new presentation from template
-        new_prs = Presentation(self.template_path)
+        # Extract template information
+        template_info = extract_template_info(prs)
+        logger.info(f"🎨 Template info: {len(template_info['layouts'])} layouts, {len(template_info['colors'])} colors")
         
-        # Clear existing slides except the first one (we'll use it as template)
-        slides_to_remove = list(new_prs.slides._sldIdLst)
-        for slide_id in slides_to_remove[1:]:
-            new_prs.slides._sldIdLst.remove(slide_id)
+        # Clear existing slides (keep layouts)
+        slide_count = len(prs.slides)
+        for i in range(slide_count - 1, -1, -1):
+            r_id = prs.slides._sldIdLst[i].rId
+            prs.part.drop_rel(r_id)
+            del prs.slides._sldIdLst[i]
         
-        # Get the template slide layout
-        template_slide = new_prs.slides[0] if len(new_prs.slides) > 0 else None
-        slide_layouts = new_prs.slide_layouts
+        # Create slides from data
+        slides_data = presentation_data.get('slides', [])
+        if not slides_data:
+            logger.warning("⚠️ No slides data provided")
+            return False
         
-        # Clear the template slide if it exists
-        if template_slide:
-            new_prs.slides._sldIdLst.remove(new_prs.slides._sldIdLst[0])
+        logger.info(f"📊 Creating {len(slides_data)} slides")
         
-        # Create slides based on structure
-        slides_data = slide_structure.get("slides", [])
+        # Create title slide
+        title_slide_data = {
+            'title': presentation_data.get('title', 'AI Generated Presentation'),
+            'content': presentation_data.get('subtitle', ''),
+            'type': 'title'
+        }
+        await create_slide(prs, title_slide_data, template_info, 0)
         
-        for i, slide_data in enumerate(slides_data):
-            if i == 0:
-                # Title slide
-                slide = new_prs.slides.add_slide(slide_layouts[0])  # Title slide layout
-                self._populate_title_slide(slide, slide_data, slide_structure.get("title", ""))
-            else:
-                # Content slide
-                slide = new_prs.slides.add_slide(slide_layouts[1])  # Content slide layout
-                self._populate_content_slide(slide, slide_data)
+        # Create content slides
+        for i, slide_data in enumerate(slides_data, 1):
+            await create_slide(prs, slide_data, template_info, i)
+        
+        # Save presentation
+        prs.save(output_path)
+        logger.info(f"✅ Presentation saved to {output_path}")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ Error creating presentation: {e}", exc_info=True)
+        return False
+
+def extract_template_info(prs: Presentation) -> Dict[str, Any]:
+    """Extract styling information from the template"""
+    try:
+        template_info = {
+            'layouts': [],
+            'colors': [],
+            'fonts': [],
+            'images': []
+        }
+        
+        # Extract slide layouts
+        for layout in prs.slide_layouts:
+            layout_info = {
+                'name': layout.name if hasattr(layout, 'name') else f"Layout {len(template_info['layouts'])}",
+                'placeholders': []
+            }
             
-            # Add speaker notes if present
-            if "speaker_notes" in slide_data:
-                slide.notes_slide.notes_text_frame.text = slide_data["speaker_notes"]
+            # Extract placeholders
+            for placeholder in layout.placeholders:
+                try:
+                    ph_info = {
+                        'type': placeholder.placeholder_format.type if hasattr(placeholder, 'placeholder_format') else None,
+                        'idx': placeholder.placeholder_format.idx if hasattr(placeholder, 'placeholder_format') else len(layout_info['placeholders']),
+                        'left': placeholder.left,
+                        'top': placeholder.top,
+                        'width': placeholder.width,
+                        'height': placeholder.height
+                    }
+                    layout_info['placeholders'].append(ph_info)
+                except:
+                    pass
+            
+            template_info['layouts'].append(layout_info)
         
-        # Save the presentation
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pptx") as temp_file:
-            self.output_path = temp_file.name
+        # Extract color scheme from existing slides
+        for slide in prs.slides:
+            for shape in slide.shapes:
+                try:
+                    if hasattr(shape, 'fill') and shape.fill.type == 1:  # Solid fill
+                        color = shape.fill.fore_color.rgb
+                        if color not in template_info['colors']:
+                            template_info['colors'].append(color)
+                except:
+                    pass
         
-        new_prs.save(self.output_path)
-        return self.output_path
-    
-    def _populate_title_slide(self, slide, slide_data: Dict, presentation_title: str):
-        """Populate a title slide"""
+        # Add default colors if none found
+        if not template_info['colors']:
+            template_info['colors'] = [
+                RGBColor(44, 62, 80),   # Dark blue
+                RGBColor(52, 152, 219), # Blue
+                RGBColor(46, 204, 113), # Green
+                RGBColor(241, 196, 15), # Yellow
+                RGBColor(231, 76, 60),  # Red
+                RGBColor(155, 89, 182), # Purple
+                RGBColor(149, 165, 166) # Gray
+            ]
+        
+        return template_info
+        
+    except Exception as e:
+        logger.warning(f"⚠️ Error extracting template info: {e}")
+        return {
+            'layouts': [],
+            'colors': [RGBColor(44, 62, 80), RGBColor(52, 152, 219)],
+            'fonts': ['Calibri', 'Arial'],
+            'images': []
+        }
+
+async def create_slide(prs: Presentation, slide_data: Dict[str, Any], template_info: Dict[str, Any], slide_index: int):
+    """Create a single slide from data"""
+    try:
+        slide_type = slide_data.get('type', 'content')
+        
+        # Choose appropriate layout
+        layout_index = 0  # Title slide
+        if slide_type in ['content', 'bullets']:
+            layout_index = min(1, len(prs.slide_layouts) - 1)  # Content layout
+        elif slide_type == 'title':
+            layout_index = 0  # Title layout
+        elif slide_type in ['image', 'chart']:
+            layout_index = min(2, len(prs.slide_layouts) - 1) if len(prs.slide_layouts) > 2 else 1
+        
+        layout = prs.slide_layouts[layout_index]
+        slide = prs.slides.add_slide(layout)
+        
+        logger.info(f"📄 Creating slide {slide_index + 1}: {slide_data.get('title', 'Untitled')}")
+        
+        # Add title
+        title = slide_data.get('title', f'Slide {slide_index + 1}')
         if slide.shapes.title:
-            slide.shapes.title.text = presentation_title or slide_data.get("title", "")
+            slide.shapes.title.text = title
+            
+            # Style title
+            title_frame = slide.shapes.title.text_frame
+            title_frame.clear()
+            p = title_frame.paragraphs[0]
+            p.text = title
+            p.font.name = 'Calibri'
+            p.font.size = Pt(36 if slide_type == 'title' else 28)
+            p.font.bold = True
+            if template_info['colors']:
+                p.font.color.rgb = template_info['colors'][0]
         
-        # Find subtitle placeholder
-        for shape in slide.placeholders:
-            if shape.placeholder_format.idx == 1:  # Subtitle placeholder
-                shape.text = slide_data.get("content", "")
-                break
-    
-    def _populate_content_slide(self, slide, slide_data: Dict):
-        """Populate a content slide"""
-        if slide.shapes.title:
-            slide.shapes.title.text = slide_data.get("title", "")
+        # Add content based on slide type
+        if slide_type == 'title':
+            await add_title_content(slide, slide_data, template_info)
+        elif slide_type == 'bullets':
+            await add_bullet_content(slide, slide_data, template_info)
+        elif slide_type == 'content':
+            await add_content_slide(slide, slide_data, template_info)
+        else:
+            await add_content_slide(slide, slide_data, template_info)
+        
+        # Add speaker notes
+        notes_text = slide_data.get('speaker_notes', '')
+        if notes_text:
+            notes_slide = slide.notes_slide
+            notes_slide.notes_text_frame.text = notes_text
+            
+    except Exception as e:
+        logger.error(f"❌ Error creating slide {slide_index}: {e}")
+
+async def add_title_content(slide, slide_data: Dict[str, Any], template_info: Dict[str, Any]):
+    """Add content to title slide"""
+    try:
+        content = slide_data.get('content', '')
+        
+        # Look for subtitle placeholder or content placeholder
+        subtitle_shape = None
+        for shape in slide.shapes:
+            if hasattr(shape, 'placeholder_format'):
+                # Subtitle placeholder
+                if shape.placeholder_format.type == 4:  # PP_PLACEHOLDER.SUBTITLE
+                    subtitle_shape = shape
+                    break
+        
+        if subtitle_shape and content:
+            subtitle_shape.text = content
+            
+            # Style subtitle
+            text_frame = subtitle_shape.text_frame
+            for paragraph in text_frame.paragraphs:
+                paragraph.font.name = 'Calibri'
+                paragraph.font.size = Pt(18)
+                if template_info['colors'] and len(template_info['colors']) > 1:
+                    paragraph.font.color.rgb = template_info['colors'][1]
+                    
+    except Exception as e:
+        logger.error(f"❌ Error adding title content: {e}")
+
+async def add_bullet_content(slide, slide_data: Dict[str, Any], template_info: Dict[str, Any]):
+    """Add bullet point content to slide"""
+    try:
+        content = slide_data.get('content', [])
+        if isinstance(content, str):
+            content = [content]
         
         # Find content placeholder
-        content_placeholder = None
-        for shape in slide.placeholders:
-            if shape.placeholder_format.idx == 1:  # Content placeholder
-                content_placeholder = shape
-                break
+        content_shape = None
+        for shape in slide.shapes:
+            if hasattr(shape, 'placeholder_format'):
+                if shape.placeholder_format.type == 2:  # PP_PLACEHOLDER.BODY
+                    content_shape = shape
+                    break
         
-        if content_placeholder:
-            content = slide_data.get("content", "")
-            self._format_content_text(content_placeholder, content)
-    
-    def _format_content_text(self, placeholder, content: str):
-        """Format text content with bullet points"""
-        text_frame = placeholder.text_frame
-        text_frame.clear()
+        if content_shape and content:
+            text_frame = content_shape.text_frame
+            text_frame.clear()
+            
+            for i, bullet_point in enumerate(content):
+                if i == 0:
+                    p = text_frame.paragraphs[0]
+                else:
+                    p = text_frame.add_paragraph()
+                
+                p.text = str(bullet_point).strip()
+                p.level = 0
+                p.font.name = 'Calibri'
+                p.font.size = Pt(18)
+                
+                if template_info['colors']:
+                    p.font.color.rgb = template_info['colors'][0]
+                    
+    except Exception as e:
+        logger.error(f"❌ Error adding bullet content: {e}")
+
+async def add_content_slide(slide, slide_data: Dict[str, Any], template_info: Dict[str, Any]):
+    """Add general content to slide"""
+    try:
+        content = slide_data.get('content', '')
         
-        # Split content into bullet points
-        lines = [line.strip() for line in content.split('\n') if line.strip()]
+        # Find content placeholder
+        content_shape = None
+        for shape in slide.shapes:
+            if hasattr(shape, 'placeholder_format'):
+                if shape.placeholder_format.type == 2:  # PP_PLACEHOLDER.BODY
+                    content_shape = shape
+                    break
         
-        for i, line in enumerate(lines):
-            if i == 0:
-                p = text_frame.paragraphs[0]
+        if not content_shape:
+            # Create a text box if no placeholder found
+            left = Inches(1)
+            top = Inches(2)
+            width = Inches(8)
+            height = Inches(4)
+            content_shape = slide.shapes.add_textbox(left, top, width, height)
+        
+        if content and content_shape:
+            if isinstance(content, list):
+                # Handle list content as bullet points
+                text_frame = content_shape.text_frame
+                text_frame.clear()
+                
+                for i, item in enumerate(content):
+                    if i == 0:
+                        p = text_frame.paragraphs[0]
+                    else:
+                        p = text_frame.add_paragraph()
+                    
+                    p.text = str(item).strip()
+                    p.level = 0
+                    p.font.name = 'Calibri'
+                    p.font.size = Pt(16)
+                    
+                    if template_info['colors']:
+                        p.font.color.rgb = template_info['colors'][0]
             else:
-                p = text_frame.add_paragraph()
+                # Handle string content
+                content_shape.text = str(content)
+                text_frame = content_shape.text_frame
+                
+                for paragraph in text_frame.paragraphs:
+                    paragraph.font.name = 'Calibri'
+                    paragraph.font.size = Pt(16)
+                    
+                    if template_info['colors']:
+                        paragraph.font.color.rgb = template_info['colors'][0]
+                        
+    except Exception as e:
+        logger.error(f"❌ Error adding content: {e}")
+
+def validate_presentation_data(data: Dict[str, Any]) -> bool:
+    """Validate presentation data structure"""
+    try:
+        if not isinstance(data, dict):
+            return False
+        
+        # Check required fields
+        if 'slides' not in data or not isinstance(data['slides'], list):
+            return False
+        
+        if len(data['slides']) == 0:
+            return False
+        
+        # Check each slide
+        for slide in data['slides']:
+            if not isinstance(slide, dict):
+                return False
             
-            # Remove existing bullet markers
-            clean_line = re.sub(r'^[-•*]\s*', '', line)
-            p.text = clean_line
-            p.level = 0
-            
-            # Set bullet point
-            p.font.size = Pt(18)
-    
-    def cleanup(self):
-        """Clean up temporary files"""
-        if self.output_path and os.path.exists(self.output_path):
-            os.unlink(self.output_path)
+            if 'title' not in slide:
+                return False
+        
+        return True
+        
+    except Exception:
+        return False

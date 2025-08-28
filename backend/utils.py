@@ -6,6 +6,14 @@ from typing import List, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
+# backend/utils.py
+
+def validate_pptx_file(file_path: str) -> bool:
+    """
+    Validates if the given file is a .pptx file.
+    Returns True if valid, False otherwise.
+    """
+    return file_path.endswith(".pptx")
 
 def validate_pptx_file(file_path: str) -> bool:
     """
